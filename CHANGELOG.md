@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/berkayyildirim/mcp-content-pipeline/compare/v0.2.0...v0.2.1) (2026-03-09)
+
+
+### Bug Fixes
+
+* update youtube-transcript-api to v1.x API ([5f27c53](https://github.com/berkayyildirim/mcp-content-pipeline/commit/5f27c532be59876c3646ffdb853f00061b3f00f2))
+
 ## [0.2.0](https://github.com/berkayyildirim/mcp-content-pipeline/compare/v0.1.0...v0.2.0) (2026-03-09)
 
 
