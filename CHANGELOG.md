@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/berkayyildirim/mcp-content-pipeline/compare/v0.1.0...v0.2.0) (2026-03-09)
+
+
+### Features
+
+* add transcript translation fallback and live URL support ([9e32e3e](https://github.com/berkayyildirim/mcp-content-pipeline/commit/9e32e3e516692f208823809ca46a809a76d3f607))
+
 ## 0.1.0 (2026-03-08)
 
 
