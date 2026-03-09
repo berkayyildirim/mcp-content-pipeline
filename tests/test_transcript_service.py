@@ -5,11 +5,12 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from youtube_transcript_api._errors import YouTubeTranscriptApiException
+from youtube_transcript_api._errors import NoTranscriptFound, YouTubeTranscriptApiException
 
 from mcp_content_pipeline.services.transcript import (
     fetch_transcript,
     fetch_video_metadata,
+    parse_video_id,
 )
 
 
@@ -95,6 +96,83 @@ class TestFetchTranscript:
             MockApi.return_value = mock_ytt
             with pytest.raises(RuntimeError, match="Unexpected system error"):
                 await fetch_transcript("dQw4w9WgXcQ")
+
+
+class TestParseVideoId:
+    def test_live_url(self):
+        url = "https://www.youtube.com/live/-c7k_MT84eQ"
+        assert parse_video_id(url) == "-c7k_MT84eQ"
+
+    def test_live_url_with_query_params(self):
+        url = "https://www.youtube.com/live/-c7k_MT84eQ?si=abc123"
+        assert parse_video_id(url) == "-c7k_MT84eQ"
+
+    def test_standard_watch_url(self):
+        url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        assert parse_video_id(url) == "dQw4w9WgXcQ"
+
+    def test_invalid_url_raises(self):
+        with pytest.raises(ValueError):
+            parse_video_id("https://example.com/notavideo")
+
+
+class TestFetchTranscriptFallbackChain:
+    @pytest.mark.asyncio
+    async def test_turkish_transcript_translated_to_english(self):
+        """When English is unavailable, a Turkish generated transcript is translated."""
+        mock_ytt = MagicMock()
+        mock_ytt.fetch.side_effect = YouTubeTranscriptApiException("No English")
+
+        mock_transcript_list = MagicMock()
+        mock_transcript_list.find_transcript.side_effect = NoTranscriptFound(
+            "test_id", [], MagicMock()
+        )
+        mock_translated = MagicMock()
+        mock_translated.fetch.return_value = MagicMock()
+        mock_generated = MagicMock()
+        mock_generated.translate.return_value = mock_translated
+        mock_transcript_list.find_generated_transcript.return_value = mock_generated
+
+        mock_ytt.list.return_value = mock_transcript_list
+
+        with patch("mcp_content_pipeline.services.transcript.YouTubeTranscriptApi") as MockApi, \
+             patch("mcp_content_pipeline.services.transcript.TextFormatter") as MockFormatter:
+            MockApi.return_value = mock_ytt
+            MockFormatter.return_value.format_transcript.return_value = "Translated Turkish transcript"
+
+            result = await fetch_transcript("test_id")
+            assert result == "Translated Turkish transcript"
+            mock_generated.translate.assert_called_once_with("en")
+
+    @pytest.mark.asyncio
+    async def test_manually_created_transcript_fallback(self):
+        """When no generated transcript exists, falls back to manually created."""
+        mock_ytt = MagicMock()
+        mock_ytt.fetch.side_effect = YouTubeTranscriptApiException("No English")
+
+        mock_transcript_list = MagicMock()
+        mock_transcript_list.find_transcript.side_effect = NoTranscriptFound(
+            "test_id", [], MagicMock()
+        )
+        mock_transcript_list.find_generated_transcript.side_effect = NoTranscriptFound(
+            "test_id", [], MagicMock()
+        )
+        mock_translated = MagicMock()
+        mock_translated.fetch.return_value = MagicMock()
+        mock_manual = MagicMock()
+        mock_manual.translate.return_value = mock_translated
+        mock_transcript_list.find_manually_created_transcript.return_value = mock_manual
+
+        mock_ytt.list.return_value = mock_transcript_list
+
+        with patch("mcp_content_pipeline.services.transcript.YouTubeTranscriptApi") as MockApi, \
+             patch("mcp_content_pipeline.services.transcript.TextFormatter") as MockFormatter:
+            MockApi.return_value = mock_ytt
+            MockFormatter.return_value.format_transcript.return_value = "Manual transcript translated"
+
+            result = await fetch_transcript("test_id")
+            assert result == "Manual transcript translated"
+            mock_manual.translate.assert_called_once_with("en")
 
 
 class TestFetchVideoMetadata:

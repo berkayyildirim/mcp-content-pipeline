@@ -6,7 +6,10 @@ import re
 
 import httpx
 from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import YouTubeTranscriptApiException
+from youtube_transcript_api._errors import (
+    NoTranscriptFound,
+    YouTubeTranscriptApiException,
+)
 from youtube_transcript_api.formatters import TextFormatter
 
 HTTP_TIMEOUT = 30.0
@@ -15,7 +18,7 @@ HTTP_TIMEOUT = 30.0
 def parse_video_id(url: str) -> str:
     """Extract video ID from various YouTube URL formats."""
     patterns = [
-        r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/shorts/)([a-zA-Z0-9_-]{11})",
+        r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/shorts/|youtube\.com/live/)([a-zA-Z0-9_-]{11})",
         r"(?:youtube\.com/embed/)([a-zA-Z0-9_-]{11})",
     ]
     for pattern in patterns:
@@ -38,8 +41,23 @@ async def fetch_transcript(video_id: str, max_tokens: int = 100000) -> str:
             transcript = ytt_api.fetch(video_id, languages=["en-US", "en-GB"])
         except YouTubeTranscriptApiException:
             transcript_list = ytt_api.list(video_id)
-            transcript = transcript_list.find_transcript(["en"])
-            transcript = transcript.fetch()
+            try:
+                # Try English transcript from the list
+                transcript_obj = transcript_list.find_transcript(["en"])
+                transcript = transcript_obj.fetch()
+            except NoTranscriptFound:
+                try:
+                    # Try generated transcript in common languages, translate to English
+                    transcript_obj = transcript_list.find_generated_transcript(
+                        ["tr", "es", "fr", "de", "pt", "ja", "ko", "ar", "hi", "zh-Hans"]
+                    )
+                    transcript = transcript_obj.translate("en").fetch()
+                except NoTranscriptFound:
+                    # Last resort: any manually created transcript, translate to English
+                    transcript_obj = transcript_list.find_manually_created_transcript(
+                        ["tr", "es", "fr", "de", "pt", "ja", "ko", "ar", "hi", "zh-Hans"]
+                    )
+                    transcript = transcript_obj.translate("en").fetch()
 
     formatter = TextFormatter()
     text = formatter.format_transcript(transcript)
