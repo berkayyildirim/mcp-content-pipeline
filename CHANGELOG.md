@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/berkayyildirim/mcp-content-pipeline/compare/v0.3.2...v0.4.0) (2026-03-10)
+
+
+### Features
+
+* rename Twitter/X labels to Social Hook in user-facing strings ([42d99d8](https://github.com/berkayyildirim/mcp-content-pipeline/commit/42d99d859a5b79dd1a5ff48b7cc72863521821d4))
+
 ## [0.3.2](https://github.com/berkayyildirim/mcp-content-pipeline/compare/v0.3.1...v0.3.2) (2026-03-10)
 
 
