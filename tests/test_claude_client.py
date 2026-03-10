@@ -100,6 +100,20 @@ class TestParseAnalysisResponse:
         with pytest.raises(Exception):
             parse_analysis_response("not json at all", sample_video_metadata)
 
+    def test_parse_overrides_hallucinated_date(self, sample_video_metadata):
+        data = {
+            "title": "Test",
+            "channel": "Test Channel",
+            "url": "https://youtube.com/watch?v=abc",
+            "date_analysed": "1999-01-01T00:00:00",
+            "key_takeaways": ["t1", "t2"],
+            "tldr": "Summary",
+            "twitter_hook": "Hook text #test",
+            "topics": ["topic1"],
+        }
+        result = parse_analysis_response(json.dumps(data), sample_video_metadata)
+        assert "1999-01-01" not in result.date_analysed
+
     def test_parse_validates_pydantic(self, sample_video_metadata):
         # Missing required fields and no fallback
         data = {"title": "Test"}

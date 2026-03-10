@@ -70,7 +70,7 @@ def parse_analysis_response(raw: str, metadata: dict) -> VideoAnalysis:
     data.setdefault("title", metadata.get("title", "Unknown"))
     data.setdefault("channel", metadata.get("channel", "Unknown"))
     data.setdefault("url", metadata.get("url", ""))
-    data.setdefault("date_analysed", datetime.now().isoformat())
+    data["date_analysed"] = datetime.now().isoformat()
 
     return VideoAnalysis.model_validate(data)
 
