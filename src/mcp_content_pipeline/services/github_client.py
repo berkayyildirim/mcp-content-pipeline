@@ -32,7 +32,7 @@ def generate_markdown(analysis: VideoAnalysis) -> str:
 
 {analysis.tldr}
 
-## Twitter/X Draft
+## Social Hook
 
 > {analysis.twitter_hook}
 """

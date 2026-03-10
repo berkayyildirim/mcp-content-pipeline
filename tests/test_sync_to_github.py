@@ -50,8 +50,9 @@ class TestGenerateMarkdown:
         md = generate_markdown(analysis)
         assert "A short summary of the video content." in md
 
-    def test_markdown_contains_twitter_hook(self, analysis):
+    def test_markdown_contains_social_hook(self, analysis):
         md = generate_markdown(analysis)
+        assert "## Social Hook" in md
         assert "> Bold claim about ML #MLOps #AI" in md
 
     def test_markdown_contains_topics(self, analysis):
