@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/berkayyildirim/mcp-content-pipeline/compare/v0.3.0...v0.3.1) (2026-03-10)
+
+
+### Bug Fixes
+
+* **claude-client:** override date_analysed instead of trusting LLM response ([6af7028](https://github.com/berkayyildirim/mcp-content-pipeline/commit/6af7028c29a36ab7784e160175446e998316d4d6))
+
 ## [0.3.0](https://github.com/berkayyildirim/mcp-content-pipeline/compare/v0.2.1...v0.3.0) (2026-03-09)
 
 
