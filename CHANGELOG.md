@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.2](https://github.com/berkayyildirim/mcp-content-pipeline/compare/v0.3.1...v0.3.2) (2026-03-10)
+
+
+### Documentation
+
+* **readme:** add PyPI downloads badge ([d7f4aaa](https://github.com/berkayyildirim/mcp-content-pipeline/commit/d7f4aaad26c71b34f2e5b01ac1a0a7d07cd688ab))
+* update readme ([74a4051](https://github.com/berkayyildirim/mcp-content-pipeline/commit/74a405163a580cd99f6a1807ae2beb61cf031617))
+
 ## [0.3.1](https://github.com/berkayyildirim/mcp-content-pipeline/compare/v0.3.0...v0.3.1) (2026-03-10)
 
 
