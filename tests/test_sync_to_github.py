@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from mcp_content_pipeline.models.schemas import VideoAnalysis
@@ -252,6 +254,65 @@ class TestIndexMergeBehavior:
         assert len(entries) == 2
         assert "2026-03-01-vid-a.md" in entries
         assert "2026-03-05-vid-b.md" in entries
+
+
+class TestPipeEscaping:
+    """Tests for pipe character escaping in markdown table rows."""
+
+    def _make_analysis(self, title: str, date: str) -> VideoAnalysis:
+        return VideoAnalysis(
+            title=title,
+            channel="Channel",
+            url=f"https://youtube.com/watch?v=test",
+            date_analysed=date,
+            key_takeaways=["t"],
+            tldr="s",
+            twitter_hook="h",
+            topics=["t"],
+        )
+
+    def test_pipe_in_title_escaped_in_index(self):
+        analysis = self._make_analysis("React | Vue | Angular", "2026-03-08T12:00:00")
+        index = generate_index([analysis], "content/videos")
+        # The title should have escaped pipes so the table isn't broken
+        assert r"React \| Vue \| Angular" in index
+
+    def test_pipe_in_title_table_columns_intact(self):
+        analysis = self._make_analysis("A | B", "2026-03-08T12:00:00")
+        index = generate_index([analysis], "content/videos")
+        # Table rows should still have exactly 4 real column separators (leading, 3 between, trailing)
+        data_rows = [
+            line for line in index.split("\n")
+            if line.startswith("|") and "Date" not in line and "---" not in line
+        ]
+        assert len(data_rows) == 1
+        # Split on unescaped pipes only: count real columns
+        cols = re.split(r"(?<!\\)\|", data_rows[0])
+        # Leading empty + Date + Title + File + trailing empty = 5 parts
+        assert len(cols) == 5
+
+    def test_parse_index_entries_with_escaped_pipes(self):
+        content = (
+            "# Video Analyses Index\n\n"
+            "| Date | Title | File |\n"
+            "|------|-------|------|\n"
+            r"| 2026-03-08 | React \| Vue | [2026-03-08-react-vue.md](./2026-03-08-react-vue.md) |"
+            "\n"
+        )
+        entries = parse_index_entries(content)
+        assert "2026-03-08-react-vue.md" in entries
+
+    def test_roundtrip_pipe_in_title(self):
+        """Generate index, parse it back, then merge — should not duplicate."""
+        analysis = self._make_analysis("Foo | Bar", "2026-03-08T12:00:00")
+        index = generate_index([analysis], "content/videos")
+        # Parse and re-generate with the same analysis
+        index2 = generate_index([analysis], "content/videos", index)
+        data_rows = [
+            line for line in index2.split("\n")
+            if line.startswith("|") and "Date" not in line and "---" not in line
+        ]
+        assert len(data_rows) == 1
 
 
 class TestSyncToGithub:

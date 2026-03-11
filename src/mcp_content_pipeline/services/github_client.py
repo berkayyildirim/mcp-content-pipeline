@@ -59,7 +59,8 @@ def parse_index_entries(index_content: str) -> dict[str, str]:
         # Extract filename from markdown link: [basename](./basename)
         match = re.search(r"\[([^\]]+\.md)\]", line)
         if match:
-            entries[match.group(1)] = line
+            key = match.group(1).replace(r"\|", "|")
+            entries[key] = line
     return entries
 
 
@@ -86,7 +87,9 @@ def generate_index(
             date_str = datetime.fromisoformat(analysis.date_analysed).strftime("%Y-%m-%d")
         except (ValueError, TypeError):
             date_str = "Unknown"
-        row = f"| {date_str} | {analysis.title} | [{basename}](./{basename}) |"
+        escaped_title = analysis.title.replace("|", r"\|")
+        escaped_basename = basename.replace("|", r"\|")
+        row = f"| {date_str} | {escaped_title} | [{escaped_basename}](./{escaped_basename}) |"
         entries[basename] = row
 
     # Sort rows by date descending (date is first column)
