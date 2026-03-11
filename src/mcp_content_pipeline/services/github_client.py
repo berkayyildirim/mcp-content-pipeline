@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 
 from github import Github, GithubException
@@ -49,15 +50,35 @@ def generate_filename(analysis: VideoAnalysis, output_dir: str) -> str:
     return f"{output_dir}/{date_str}-{slug}.md"
 
 
-def generate_index(analyses: list[VideoAnalysis], output_dir: str) -> str:
-    """Generate an index.md listing all analyses as a table."""
-    lines = [
-        "# Video Analyses Index",
-        "",
-        "| Date | Title | File |",
-        "|------|-------|------|",
-    ]
+def parse_index_entries(index_content: str) -> dict[str, str]:
+    """Parse existing index.md and return a dict of filename -> full table row."""
+    entries: dict[str, str] = {}
+    for line in index_content.split("\n"):
+        if not line.startswith("|") or line.startswith("| Date") or line.startswith("|---"):
+            continue
+        # Extract filename from markdown link: [basename](./basename)
+        match = re.search(r"\[([^\]]+\.md)\]", line)
+        if match:
+            entries[match.group(1)] = line
+    return entries
 
+
+def generate_index(
+    analyses: list[VideoAnalysis],
+    output_dir: str,
+    existing_index_content: str | None = None,
+) -> str:
+    """Generate an index.md listing all analyses as a table.
+
+    If existing_index_content is provided, merges new analyses with existing
+    entries (deduplicating by filename) and sorts by date descending.
+    """
+    # Start with existing entries
+    entries: dict[str, str] = {}
+    if existing_index_content:
+        entries = parse_index_entries(existing_index_content)
+
+    # Add/overwrite with new analyses
     for analysis in analyses:
         filename = generate_filename(analysis, output_dir)
         basename = filename.split("/")[-1]
@@ -65,10 +86,29 @@ def generate_index(analyses: list[VideoAnalysis], output_dir: str) -> str:
             date_str = datetime.fromisoformat(analysis.date_analysed).strftime("%Y-%m-%d")
         except (ValueError, TypeError):
             date_str = "Unknown"
-        lines.append(f"| {date_str} | {analysis.title} | [{basename}](./{basename}) |")
+        row = f"| {date_str} | {analysis.title} | [{basename}](./{basename}) |"
+        entries[basename] = row
 
-    lines.append("")
+    # Sort rows by date descending (date is first column)
+    sorted_rows = sorted(entries.values(), key=_extract_date_from_row, reverse=True)
+
+    lines = [
+        "# Video Analyses Index",
+        "",
+        "| Date | Title | File |",
+        "|------|-------|------|",
+        *sorted_rows,
+        "",
+    ]
     return "\n".join(lines)
+
+
+def _extract_date_from_row(row: str) -> str:
+    """Extract the date string from a table row for sorting."""
+    parts = row.split("|")
+    if len(parts) >= 2:
+        return parts[1].strip()
+    return ""
 
 
 async def sync_to_github(
@@ -103,20 +143,29 @@ async def sync_to_github(
             repo.create_file(filepath, commit_message, content, branch=branch)
             file_results.append(SyncFileResult(path=filepath, action="created"))
 
-    # Update index.md
+    # Update index.md — read existing content first to preserve previous entries
     index_path = f"{output_dir}/index.md"
-    index_content = generate_index(analyses, output_dir)
+    existing_index_content: str | None = None
+    existing_index_sha: str | None = None
 
     try:
         existing_index = repo.get_contents(index_path, ref=branch)
+        existing_index_content = existing_index.decoded_content.decode()  # type: ignore[union-attr]
+        existing_index_sha = existing_index.sha  # type: ignore[union-attr]
+    except GithubException:
+        pass
+
+    index_content = generate_index(analyses, output_dir, existing_index_content)
+
+    if existing_index_sha:
         result = repo.update_file(
             index_path,
             f"{commit_message} (update index)",
             index_content,
-            existing_index.sha,  # type: ignore[union-attr]
+            existing_index_sha,
             branch=branch,
         )
-    except GithubException:
+    else:
         result = repo.create_file(
             index_path,
             f"{commit_message} (update index)",
