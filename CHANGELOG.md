@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/berkayildi/mcp-content-pipeline/compare/v0.4.0...v0.4.1) (2026-03-14)
+
+
+### Bug Fixes
+
+* escape pipe characters in index table to prevent column breaking ([f39ae71](https://github.com/berkayildi/mcp-content-pipeline/commit/f39ae7155c98016b1cbbcee9f276b3aaabc0786d))
+* preserve existing index entries when syncing new analyses ([7006ce6](https://github.com/berkayildi/mcp-content-pipeline/commit/7006ce67a35a32f6578b42ac066b3d4b68a702f7))
+
 ## [0.4.0](https://github.com/berkayyildirim/mcp-content-pipeline/compare/v0.3.2...v0.4.0) (2026-03-10)
 
 
