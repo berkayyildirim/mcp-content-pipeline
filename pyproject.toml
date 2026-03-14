@@ -27,6 +27,9 @@ dependencies = [
     "python-slugify",
 ]
 
+[project.urls]
+Repository = "https://github.com/berkayildi/mcp-content-pipeline"
+
 [project.scripts]
 mcp-content-pipeline = "mcp_content_pipeline.server:main"
 
